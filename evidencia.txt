@@ -1,0 +1,299 @@
+================================================================================
+DEMO: COMPARACION DE TOKENIZADORES
+================================================================================
+Texto:
+Mi numero es +502 5555-1234 y mi correo es ana@uvg.edu.gt
+
+Tokenizacion por espacios:
+['Mi', 'numero', 'es', '+502', '5555-1234', 'y', 'mi', 'correo', 'es', 'ana@uvg.edu.gt']
+
+Tokenizacion Regex basica:
+['mi', 'numero', 'es', '502', '5555', '1234', 'y', 'mi', 'correo', 'es', 'ana', 'uvg', 'edu', 'gt']
+
+Tokenizacion Regex mixta:
+['Mi', 'numero', 'es', '+', '502', '5555', '-', '1234', 'y', 'mi', 'correo', 'es', 'ana@uvg.edu.gt']
+
+================================================================================
+DEMO: PIPELINE COMPLETO
+================================================================================
+
+================================================================================
+TEXTO 1
+================================================================================
+Texto original:
+Hola!!!   necesito ayuda con mi cuenta :(
+ mi correo es paula.reba@example.com
+
+Texto normalizado:
+Hola!!! necesito ayuda con mi cuenta :( mi correo es paula.reba@example.com
+
+Datos sensibles detectados:
+  - EMAIL: paula.reba@example.com
+
+Accion recomendada: REDACT
+
+Texto seguro:
+Hola!!! necesito ayuda con mi cuenta :( mi correo es [EMAIL_REDACTED]
+
+Tokens:
+['Hola', '!', '!', '!', 'necesito', 'ayuda', 'con', 'mi', 'cuenta', ':', '(', 'mi', 'correo', 'es', '[', 'EMAIL_REDACTED', ']']
+
+Estadisticas:
+Caracteres: 69
+Tokens: 17
+Tokens unicos: 14
+Top 10 tokens:
+  - !: 3
+  - mi: 2
+  - Hola: 1
+  - necesito: 1
+  - ayuda: 1
+  - con: 1
+  - cuenta: 1
+  - :: 1
+  - (: 1
+  - correo: 1
+
+================================================================================
+TEXTO 2
+================================================================================
+Texto original:
+Mi numero es +502 5653-2234 y el de soporte es 2222-3344
+
+Texto normalizado:
+Mi numero es +502 5653-2234 y el de soporte es 2222-3344
+
+Datos sensibles detectados:
+  - PHONE: +502 5653-2234
+  - PHONE: 2222-3344
+
+Accion recomendada: REDACT
+
+Texto seguro:
+Mi numero es [PHONE_REDACTED] y el de soporte es [PHONE_REDACTED]
+
+Tokens:
+['Mi', 'numero', 'es', '[', 'PHONE_REDACTED', ']', 'y', 'el', 'de', 'soporte', 'es', '[', 'PHONE_REDACTED', ']']
+
+Estadisticas:
+Caracteres: 65
+Tokens: 14
+Tokens unicos: 10
+Top 10 tokens:
+  - es: 2
+  - [: 2
+  - PHONE_REDACTED: 2
+  - ]: 2
+  - Mi: 1
+  - numero: 1
+  - y: 1
+  - el: 1
+  - de: 1
+  - soporte: 1
+
+================================================================================
+TEXTO 3
+================================================================================
+Texto original:
+La documentacion del curso esta en https://docs.aprendizajeporprocesamiento.com/nlp y en www.aprendizajeporprocesamiento.com/manual.pdf
+
+Texto normalizado:
+La documentacion del curso esta en https://docs.aprendizajeporprocesamiento.com/nlp y en www.aprendizajeporprocesamiento.com/manual.pdf
+
+Datos sensibles detectados:
+  - URL: https://docs.aprendizajeporprocesamiento.com/nlp
+  - URL: www.aprendizajeporprocesamiento.com/manual.pdf
+
+Accion recomendada: WARN
+
+Texto seguro:
+La documentacion del curso esta en https://docs.aprendizajeporprocesamiento.com/nlp y en www.aprendizajeporprocesamiento.com/manual.pdf
+
+Tokens:
+['La', 'documentacion', 'del', 'curso', 'esta', 'en', 'https://docs.aprendizajeporprocesamiento.com/nlp', 'y', 'en', 'www.aprendizajeporprocesamiento.com/manual.pdf']
+
+Estadisticas:
+Caracteres: 135
+Tokens: 10
+Tokens unicos: 9
+Top 10 tokens:
+  - en: 2
+  - La: 1
+  - documentacion: 1
+  - del: 1
+  - curso: 1
+  - esta: 1
+  - https://docs.aprendizajeporprocesamiento.com/nlp: 1
+  - y: 1
+  - www.aprendizajeporprocesamiento.com/manual.pdf: 1
+
+================================================================================
+TEXTO 4
+================================================================================
+Texto original:
+Mi password temporal es NPL123 y el API_KEY=abc123-simulada
+
+Texto normalizado:
+Mi password temporal es NPL123 y el API_KEY=abc123-simulada
+
+Datos sensibles detectados:
+  - SECRET_WORD: password
+  - SECRET_WORD: API_KEY
+
+Accion recomendada: BLOCK
+
+Texto seguro:
+  [BLOQUEADO: no debe enviarse al modelo]
+
+Tokens:
+[]
+
+Estadisticas:
+  No se calcularon estadisticas porque el texto fue bloqueado.
+
+================================================================================
+TEXTO 5
+================================================================================
+Texto original:
+Mi DPI es 1234 56789 0101, tambien lo tengo como 1234-56789-0101
+
+Texto normalizado:
+Mi DPI es 1234 56789 0101, tambien lo tengo como 1234-56789-0101
+
+Datos sensibles detectados:
+  - DPI: 1234 56789 0101
+  - DPI: 1234-56789-0101
+
+Accion recomendada: REDACT
+
+Texto seguro:
+Mi DPI es [DPI_REDACTED], tambien lo tengo como [DPI_REDACTED]
+
+Tokens:
+['Mi', 'DPI', 'es', '[', 'DPI_REDACTED', ']', ',', 'tambien', 'lo', 'tengo', 'como', '[', 'DPI_REDACTED', ']']
+
+Estadisticas:
+Caracteres: 62
+Tokens: 14
+Tokens unicos: 11
+Top 10 tokens:
+  - [: 2
+  - DPI_REDACTED: 2
+  - ]: 2
+  - Mi: 1
+  - DPI: 1
+  - es: 1
+  - ,: 1
+  - tambien: 1
+  - lo: 1
+  - tengo: 1
+
+================================================================================
+TEXTO 6
+================================================================================
+Texto original:
+Escribeme a soporte.tecnico@uvg.com o llamame al +502 5653-5566, mi DPI es 9876543210101
+
+Texto normalizado:
+Escribeme a soporte.tecnico@uvg.com o llamame al +502 5653-5566, mi DPI es 9876543210101
+
+Datos sensibles detectados:
+  - EMAIL: soporte.tecnico@uvg.com
+  - PHONE: +502 5653-5566
+  - DPI: 9876543210101
+
+Accion recomendada: REDACT
+
+Texto seguro:
+Escribeme a [EMAIL_REDACTED] o llamame al [PHONE_REDACTED], mi DPI es [DPI_REDACTED]
+
+Tokens:
+['Escribeme', 'a', '[', 'EMAIL_REDACTED', ']', 'o', 'llamame', 'al', '[', 'PHONE_REDACTED', ']', ',', 'mi', 'DPI', 'es', '[', 'DPI_REDACTED', ']']
+
+Estadisticas:
+Caracteres: 84
+Tokens: 18
+Tokens unicos: 14
+Top 10 tokens:
+  - [: 3
+  - ]: 3
+  - Escribeme: 1
+  - a: 1
+  - EMAIL_REDACTED: 1
+  - o: 1
+  - llamame: 1
+  - al: 1
+  - PHONE_REDACTED: 1
+  - ,: 1
+
+================================================================================
+TEXTO 7
+================================================================================
+Texto original:
+El modelo GPT-4.1 respondio: 'No tengo suficiente contexto.'
+
+Texto normalizado:
+El modelo GPT-4.1 respondio: 'No tengo suficiente contexto.'
+
+Datos sensibles detectados:
+  No se detectaron datos sensibles.
+
+Accion recomendada: ALLOW
+
+Texto seguro:
+El modelo GPT-4.1 respondio: 'No tengo suficiente contexto.'
+
+Tokens:
+['El', 'modelo', 'GPT', '-', '4', '.', '1', 'respondio', ':', "'", 'No', 'tengo', 'suficiente', 'contexto', '.', "'"]
+
+Estadisticas:
+Caracteres: 60
+Tokens: 16
+Tokens unicos: 14
+Top 10 tokens:
+  - .: 2
+  - ': 2
+  - El: 1
+  - modelo: 1
+  - GPT: 1
+  - -: 1
+  - 4: 1
+  - 1: 1
+  - respondio: 1
+  - :: 1
+
+================================================================================
+TEXTO 8
+================================================================================
+Texto original:
+anticonstitucionalmente, NLP, #IA, la clase CC3103 inicia a las 17:20.
+
+Texto normalizado:
+anticonstitucionalmente, NLP, #IA, la clase CC3103 inicia a las 17:20.
+
+Datos sensibles detectados:
+  No se detectaron datos sensibles.
+
+Accion recomendada: ALLOW
+
+Texto seguro:
+anticonstitucionalmente, NLP, #IA, la clase CC3103 inicia a las 17:20.
+
+Tokens:
+['anticonstitucionalmente', ',', 'NLP', ',', '#', 'IA', ',', 'la', 'clase', 'CC3103', 'inicia', 'a', 'las', '17', ':', '20', '.']
+
+Estadisticas:
+Caracteres: 70
+Tokens: 17
+Tokens unicos: 15
+Top 10 tokens:
+  - ,: 3
+  - anticonstitucionalmente: 1
+  - NLP: 1
+  - #: 1
+  - IA: 1
+  - la: 1
+  - clase: 1
+  - CC3103: 1
+  - inicia: 1
+  - a: 1
