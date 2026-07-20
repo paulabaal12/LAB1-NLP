@@ -122,94 +122,93 @@ def imprimir_estadisticas(estadisticas):
 PATRONES_SENSIBLES = {
     "EMAIL": r"\b[\w\.-]+@[\w\.-]+\.\w+\b",
     "URL": r"https?://\S+|www\.\S+",
+    "DPI": r"\b\d{4}[\s\-]?\d{5}[\s\-]?\d{4}\b",
     "PHONE": r"\+?\d[\d\s\-]{7,}\d",
     "SECRET_WORD": r"(?i)\b(password|contrasena|contraseña|clave|secret|token|api_key|apikey)\b",
     "LONG_NUMBER": r"\b\d{8,}\b",
 }
 
+ORDEN_PRIORIDAD = ["EMAIL", "URL", "DPI", "PHONE", "LONG_NUMBER"]
 
 def detectar_datos_sensibles(texto):
-    """Detecta datos sensibles usando los patrones definidos.
-
-    Retorna una lista de diccionarios con tipo y valor detectado.
-    """
+    """Detecta datos sensibles evitando reportar el mismo fragmento varias veces."""
     hallazgos = []
+    ocupados = []  # rangos ya reclamados por un patron con mayor prioridad
 
-    for tipo, patron in PATRONES_SENSIBLES.items():
-        coincidencias = re.findall(patron, texto)
+    def se_traslapa(inicio, fin):
+        return any(not (fin <= a or inicio >= b) for a, b in ocupados)
 
-        for coincidencia in coincidencias:
-            # re.findall puede devolver tuplas si el patron tiene grupos.
-            if isinstance(coincidencia, tuple):
-                coincidencia = " ".join(filter(None, coincidencia))
-
+    for tipo in ORDEN_PRIORIDAD + ["SECRET_WORD"]:
+        patron = PATRONES_SENSIBLES[tipo]
+        for m in re.finditer(patron, texto):
+            inicio, fin = m.span()
+            if tipo != "SECRET_WORD":
+                if se_traslapa(inicio, fin):
+                    continue
+                ocupados.append((inicio, fin))
             hallazgos.append({
                 "tipo": tipo,
-                "valor": coincidencia,
+                "valor": m.group(0),
+                "inicio": inicio,
+                "fin": fin,
             })
 
+    hallazgos.sort(key=lambda h: h["inicio"])
     return hallazgos
-
 
 # -----------------------------------------------------------------------------
 # 6. Acciones De Guardrail
 # -----------------------------------------------------------------------------
-
 def decidir_accion(hallazgos):
-    """Decide que accion tomar segun los datos detectados.
-
-    Politica simple:
-    - Si hay secretos, bloquear.
-    - Si hay email, telefono, URL o numero largo, redactar.
-    - Si no hay hallazgos, permitir.
     """
-    tipos = {hallazgo["tipo"] for hallazgo in hallazgos}
+    SECRET_WORD                         -> BLOCK
+    EMAIL / PHONE / DPI / LONG_NUMBER   -> REDACT
+    solo URL                            -> WARN
+    nada                                -> ALLOW
+    """
+    tipos = {h["tipo"] for h in hallazgos}
 
     if "SECRET_WORD" in tipos:
         return "BLOCK"
-
-    if tipos.intersection({"EMAIL", "PHONE", "URL", "LONG_NUMBER"}):
+    if tipos.intersection({"EMAIL", "PHONE", "DPI", "LONG_NUMBER"}):
         return "REDACT"
-
+    if "URL" in tipos:
+        return "WARN"
     return "ALLOW"
 
+ETIQUETAS = {
+    "EMAIL": "[EMAIL_REDACTED]",
+    "URL": "[URL_REDACTED]",
+    "DPI": "[DPI_REDACTED]",
+    "PHONE": "[PHONE_REDACTED]",
+    "LONG_NUMBER": "[NUMBER_REDACTED]",
+}
 
-def redactar_texto(texto):
-    """Reemplaza datos sensibles por etiquetas seguras."""
+
+def redactar_texto(texto, hallazgos):
+    """Reemplaza cada hallazgo por su etiqueta, de derecha a izquierda."""
     texto_seguro = texto
-
-    reemplazos = {
-        "EMAIL": "[EMAIL_REDACTED]",
-        "URL": "[URL_REDACTED]",
-        "PHONE": "[PHONE_REDACTED]",
-        "LONG_NUMBER": "[NUMBER_REDACTED]",
-    }
-
-    for tipo, reemplazo in reemplazos.items():
-        patron = PATRONES_SENSIBLES[tipo]
-        texto_seguro = re.sub(patron, reemplazo, texto_seguro)
-
+    for h in sorted(hallazgos, key=lambda x: x["inicio"], reverse=True):
+        if h["tipo"] not in ETIQUETAS:
+            continue
+        texto_seguro = (
+            texto_seguro[:h["inicio"]] + ETIQUETAS[h["tipo"]] + texto_seguro[h["fin"]:]
+        )
     return texto_seguro
 
 
 def aplicar_guardrail(texto):
-    """Aplica deteccion, decision y posible redaccion al texto."""
     hallazgos = detectar_datos_sensibles(texto)
     accion = decidir_accion(hallazgos)
 
     if accion == "REDACT":
-        texto_seguro = redactar_texto(texto)
+        texto_seguro = redactar_texto(texto, hallazgos)
     elif accion == "BLOCK":
         texto_seguro = None
-    else:
+    else:  # para el caso de ALLOW o WARN dejan el texto tal cual
         texto_seguro = texto
 
-    return {
-        "accion": accion,
-        "hallazgos": hallazgos,
-        "texto_seguro": texto_seguro,
-    }
-
+    return {"accion": accion, "hallazgos": hallazgos, "texto_seguro": texto_seguro}
 
 # -----------------------------------------------------------------------------
 # 7. Pipeline Completo
