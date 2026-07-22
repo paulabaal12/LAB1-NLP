@@ -124,7 +124,7 @@ PATRONES_SENSIBLES = {
     "URL": r"https?://\S+|www\.\S+",
     "DPI": r"\b\d{4}[\s\-]?\d{5}[\s\-]?\d{4}\b",
     "PHONE": r"\+?\d[\d\s\-]{7,}\d",
-    "SECRET_WORD": r"(?i)\b(password|contrasena|contraseña|clave|secret|token|api_key|apikey|api key)\b",
+    "SECRET_WORD": r"(?i)\b(password|contrasena|contraseña|passkey|clave|secret|token|api_key|apikey|api key)\b",
     "LONG_NUMBER": r"\b\d{8,}\b",
 }
 
@@ -368,6 +368,70 @@ def ejercicio_4_reflexion():
     3. Que informacion se pierde al redactar datos sensibles?
     4. Regex seria suficiente para proteger informacion de una empresa real?
     5. Que otra capa de seguridad agregarian?
+
+    Respuestas (basadas en el archivo de evidencia ./evidencia.txt):
+
+    1. Falsos positivos:
+       No hubo casos donde se marcara como sensible algo que claramente no
+       lo era, pero el patron PHONE (r"\+?\d[\d\s\-]{7,}\d") es muy amplio:
+       cualquier secuencia larga de digitos con espacios o guiones (por
+       ejemplo un DPI, un codigo de curso largo o un numero de factura)
+       calzaria como telefono si no existiera la prioridad de DPI sobre
+       PHONE en ORDEN_PRIORIDAD (ver TEXTO 5 y TEXTO 6, donde el DPI se
+       reporta correctamente como DPI y no como PHONE gracias a ese orden).
+       Tambien la tokenizacion "rompe" cosas que no son datos sensibles,
+       como GPT-4.1 -> ['GPT', '-', '4', '.', '1'] (TEXTO 7) o
+       17:20 -> ['17', ':', '20'] (TEXTO 8); no son falsos positivos del
+       guardrail, pero muestran perdida de estructura por la tokenizacion.
+
+    2. Falsos negativos:
+       En TEXTO 4 ("Mi password temporal es NPL123 y el API_KEY=abc123-
+       simulada") solo se detectan las palabras clave "password" y
+       "API_KEY" (tipo SECRET_WORD); el VALOR real de la contrasena
+       (NPL123) y del API key (abc123-simulada) nunca se detecta con un
+       patron propio. Si el usuario hubiera escrito unicamente
+       "NPL123" o "abc123-simulada" sin la palabra "password"/"API_KEY",
+       el guardrail no habria detectado nada (ALLOW). Tampoco hay patrones
+       para otros PII comunes en una empresa real: nombres de personas,
+       direcciones fisicas, numeros de tarjeta de credito, IPs, IBAN, etc.
+
+    3. Informacion que se pierde al redactar:
+       Al reemplazar por etiquetas genericas como [PHONE_REDACTED] o
+       [DPI_REDACTED] se pierde la capacidad de distinguir un dato de otro:
+       en TEXTO 2 hay dos telefonos distintos (+502 5653-2234 y
+       2222-3344) y ambos quedan como el mismo texto "[PHONE_REDACTED]",
+       por lo que ya no se puede saber cual era el numero personal y cual
+       el de soporte. Lo mismo pasa en TEXTO 5 con los dos formatos de
+       DPI y en TEXTO 6 con email/telefono/DPI de una misma persona: se
+       pierde el vinculo entre los distintos datos y el formato original
+       (espacios vs guiones), que podria ser util para validacion o
+       trazabilidad posterior.
+
+    4. Es suficiente regex para proteger info de una empresa real?
+       No. Los patrones son fijos y dependen de formatos predecibles
+       (telefono y DPI de Guatemala, palabras clave en espanol/ingles para
+       secretos). Es facil de evadir: basta con no usar la palabra
+       "password"/"clave" (como casi ocurre en TEXTO 4 con el valor
+       NPL123), cambiar el formato de un numero, usar sinonimos no
+       incluidos en SECRET_WORD, o escribir el dato con caracteres
+       especiales/unicode. Ademas no entiende contexto ni semantica, por
+       lo que no cubre nombres, direcciones, secretos sin palabra clave,
+       ni datos sensibles especificos del negocio (contratos, codigos
+       internos, etc.).
+
+    5. Otras capas de seguridad:
+       - Modelos de NER / deteccion de PII entrenados (spaCy, Presidio,
+         modelos de clasificacion) para complementar el regex con
+         entendimiento semantico y de contexto.
+       - Validacion humana (human-in-the-loop) para casos marcados como
+         WARN o de confianza media antes de enviarlos al modelo.
+       - Gestion de secretos real (vault, variables de entorno) en vez de
+         permitir que credenciales viajen en texto plano dentro de
+         prompts.
+       - Logging y auditoria de los hallazgos y acciones del guardrail,
+         con alertas cuando se detecta un patron BLOCK repetidamente.
+       - Cifrado en transito/reposo y control de acceso (RBAC) sobre los
+         logs y textos que pasan por el pipeline.
     """
     pass
 
