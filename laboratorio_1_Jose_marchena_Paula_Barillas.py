@@ -124,7 +124,7 @@ PATRONES_SENSIBLES = {
     "URL": r"https?://\S+|www\.\S+",
     "DPI": r"\b\d{4}[\s\-]?\d{5}[\s\-]?\d{4}\b",
     "PHONE": r"\+?\d[\d\s\-]{7,}\d",
-    "SECRET_WORD": r"(?i)\b(password|contrasena|contraseña|clave|secret|token|api_key|apikey)\b",
+    "SECRET_WORD": r"(?i)\b(password|contrasena|contraseña|clave|secret|token|api_key|apikey|api key)\b",
     "LONG_NUMBER": r"\b\d{8,}\b",
 }
 
